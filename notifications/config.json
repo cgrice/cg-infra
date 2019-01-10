@@ -1,0 +1,8 @@
+{
+    "people": {
+        "sample": {
+            "sms": "+44161555555",
+            "email": "test@example.com"
+        }
+    }
+}

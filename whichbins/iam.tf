@@ -1,3 +1,13 @@
+data "terraform_remote_state" "notifications" {
+  backend = "s3"
+
+  config {
+    bucket   = "cg-infra-tfstate"
+    key      = "notifications.tfstate"
+    region   = "${var.region}"
+  }
+}
+
 resource "aws_iam_role" "whichbins_lambda_role" {
   name = "whichbins-lambda"
 
@@ -45,4 +55,39 @@ resource "aws_iam_role_policy" "whichbins_lambda_cloudwatch" {
 EOF
 
 }
-// TODO: Add cloudwatch and SQS permissions!
+resource "aws_iam_role_policy" "whichbins_lambda_read_config" {
+    name = "whichbins-s3-access"
+    role = "${aws_iam_role.whichbins_lambda_role.id}"
+    policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::${aws_s3_bucket.whichbins_config_bucket.bucket}/*"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "whichbins_lambda_read_queue" {
+    name = "whichbins-sqs-access"
+    role = "${aws_iam_role.whichbins_lambda_role.id}"
+    policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueUrl"
+            ],
+            "Resource": "${data.terraform_remote_state.notifications.notifications_queue}"
+        }
+    ]
+}
+EOF
+}

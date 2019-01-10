@@ -20,6 +20,16 @@ data "terraform_remote_state" "whichbins" {
   }
 }
 
+data "terraform_remote_state" "notifications" {
+  backend = "s3"
+
+  config {
+    bucket   = "cg-infra-tfstate"
+    key      = "notifications.tfstate"
+    region   = "${var.region}"
+  }
+}
+
 resource "aws_iam_user" "travis" {
   name = "travis-ci"
 }
@@ -45,7 +55,9 @@ resource "aws_iam_user_policy" "travis_deploy_access" {
       ],
       "Resource": [
         "${data.terraform_remote_state.whichbins.whichbins_lambda}",
-        "arn:aws:s3:::${data.terraform_remote_state.whichbins.whichbins_deploy_bucket}/*"
+        "arn:aws:s3:::${data.terraform_remote_state.whichbins.whichbins_deploy_bucket}/*",
+        "${data.terraform_remote_state.notifications.notifications_lambda}",
+        "arn:aws:s3:::${data.terraform_remote_state.notifications.notifications_deploy_bucket}/*"
       ],
       "Effect": "Allow"
     }

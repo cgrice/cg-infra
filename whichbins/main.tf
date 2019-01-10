@@ -16,6 +16,12 @@ resource "aws_s3_bucket" "whichbins_deploy_bucket" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket" "whichbins_config_bucket" {
+  bucket = "whichbins-config"
+  acl    = "private"
+  force_destroy = true
+}
+
 resource "aws_s3_bucket_object" "whichbins_initial_deploy" {
   bucket = "${aws_s3_bucket.whichbins_deploy_bucket.bucket}"
   key    = "deploy.zip"
@@ -27,6 +33,8 @@ resource "aws_s3_bucket_object" "whichbins_initial_deploy" {
   }
 }
 
+
+
 resource "aws_lambda_function" "whichbins_lambda" {
   function_name    = "whichbins-lambda"
   role             = "${aws_iam_role.whichbins_lambda_role.arn}"
@@ -34,4 +42,11 @@ resource "aws_lambda_function" "whichbins_lambda" {
   runtime          = "python3.7"
   s3_key           = "${aws_s3_bucket_object.whichbins_initial_deploy.id}"
   s3_bucket        = "${aws_s3_bucket.whichbins_deploy_bucket.bucket}"
+
+  environment {
+    variables = {
+      WHICHBINS_CONFIG_BUCKET = "${aws_s3_bucket.whichbins_config_bucket.bucket}"
+      WHICHBINS_CONFIG_FILE = "bins.json"
+    }
+  }
 }
