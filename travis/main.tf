@@ -30,12 +30,18 @@ data "terraform_remote_state" "notifications" {
   }
 }
 
-resource "aws_iam_user" "travis" {
-  name = "travis-ci"
+data "terraform_remote_state" "school_run" {
+  backend = "s3"
+
+  config {
+    bucket   = "cg-infra-tfstate"
+    key      = "school_run.tfstate"
+    region   = "${var.region}"
+  }
 }
 
-resource "aws_iam_access_key" "travis" {
-  user = "${aws_iam_user.travis.name}"
+resource "aws_iam_user" "travis" {
+  name = "travis-ci"
 }
 
 resource "aws_iam_user_policy" "travis_deploy_access" {
@@ -57,7 +63,9 @@ resource "aws_iam_user_policy" "travis_deploy_access" {
         "${data.terraform_remote_state.whichbins.whichbins_lambda}",
         "arn:aws:s3:::${data.terraform_remote_state.whichbins.whichbins_deploy_bucket}/*",
         "${data.terraform_remote_state.notifications.notifications_lambda}",
-        "arn:aws:s3:::${data.terraform_remote_state.notifications.notifications_deploy_bucket}/*"
+        "arn:aws:s3:::${data.terraform_remote_state.notifications.notifications_deploy_bucket}/*",
+        "${data.terraform_remote_state.school_run.school_run_lambda}",
+        "arn:aws:s3:::${data.terraform_remote_state.school_run.school_run_deploy_bucket}/*"
       ],
       "Effect": "Allow"
     }
