@@ -46,9 +46,7 @@ resource "aws_lambda_function" "notifications_lambda" {
   }
   environment {
     variables = {
-      TWILIO_ACCOUNT_SID = "AC66bc8ffa07e1df424294e3a709cc6b7e"
-      TWILIO_MSGSERVICE_SID = "MG728fa6d8044b69303fdfeec86dd97496"
-      TWILIO_SENDER = "+441502797324"
+      TWILIO_SENDER = "Reminders"
       NOTIFICATIONS_CONFIG_BUCKET = "${aws_s3_bucket.notifications_config_bucket.bucket}"
       NOTIFICATIONS_CONFIG_FILE = "${aws_s3_bucket_object.notifications_initial_config.key}"
     }
