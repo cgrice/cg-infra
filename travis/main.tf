@@ -40,6 +40,16 @@ data "terraform_remote_state" "school_run" {
   }
 }
 
+data "terraform_remote_state" "blog_api" {
+  backend = "s3"
+
+  config {
+    bucket   = "cg-infra-tfstate"
+    key      = "blog-api.tfstate"
+    region   = "${var.region}"
+  }
+}
+
 resource "aws_iam_user" "travis" {
   name = "travis-ci"
 }
@@ -65,7 +75,9 @@ resource "aws_iam_user_policy" "travis_deploy_access" {
         "${data.terraform_remote_state.notifications.notifications_lambda}",
         "arn:aws:s3:::${data.terraform_remote_state.notifications.notifications_deploy_bucket}/*",
         "${data.terraform_remote_state.school_run.school_run_lambda}",
-        "arn:aws:s3:::${data.terraform_remote_state.school_run.school_run_deploy_bucket}/*"
+        "arn:aws:s3:::${data.terraform_remote_state.school_run.school_run_deploy_bucket}/*",
+        "${data.terraform_remote_state.blog_api.blog_api_lambda}",
+        "arn:aws:s3:::${data.terraform_remote_state.blog_api.blog_api_deploy_bucket}/*"
       ],
       "Effect": "Allow"
     }

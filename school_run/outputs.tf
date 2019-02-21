@@ -1,7 +1,7 @@
 output "school_run_deploy_bucket" {
-    value = "${aws_s3_bucket.school_run_deploy_bucket.bucket}"
+    value = "${module.school_run_lambda.deploy_bucket}"
 }
 
 output "school_run_lambda" {
-    value = "${aws_lambda_function.school_run_lambda.arn}"
+    value = "${module.school_run_lambda.lambda_arn}"
 }
