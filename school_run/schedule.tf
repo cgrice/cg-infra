@@ -6,13 +6,13 @@ resource "aws_cloudwatch_event_rule" "trigger_school_run_check" {
 
 resource "aws_cloudwatch_event_target" "school_run_lambda" {
   rule      = "${aws_cloudwatch_event_rule.trigger_school_run_check.name}"
-  arn       = "${aws_lambda_function.school_run_lambda.arn}"
+  arn       = "${module.school_run_lambda.lambda_arn}"
 }
 
 resource "aws_lambda_permission" "allow_cloudwatch_to_call_school_run" {
     statement_id = "AllowExecutionFromCloudWatch"
     action = "lambda:InvokeFunction"
-    function_name = "${aws_lambda_function.school_run_lambda.function_name}"
+    function_name = "${module.school_run_lambda.function_name}"
     principal = "events.amazonaws.com"
     source_arn = "${aws_cloudwatch_event_rule.trigger_school_run_check.arn}"
 }
