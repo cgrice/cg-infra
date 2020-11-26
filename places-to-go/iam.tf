@@ -76,12 +76,25 @@ data "aws_iam_policy_document" "codebuild_places_access" {
       "logs:CreateLogGroup",
       "logs:PutLogEvent",
       "logs:PutLogEvents",
+      "codebuild:*",
+      "vpc:*",
+      "ec2:*",
     ]
 
     resources = [
         "*"
     ]
     effect    = "Allow"
+  }
+
+  statement {
+    actions = [
+      "lambda:*"
+    ]
+
+    resources = [
+      "${module.places_to_go_lambda.lambda_arn}"
+    ]
   }
 }
 
@@ -118,4 +131,32 @@ resource "aws_iam_role_policy_attachment" "codebuld" {
 resource "aws_iam_role_policy_attachment" "codebuld-artifacts" {
   role       = "${aws_iam_role.places_to_go_codebuild.id}"
   policy_arn = "${aws_iam_policy.codepipeline_artifact_access.arn}"
+}
+
+
+## LAMBDA
+
+data "aws_iam_policy_document" "lambda_vpc_permissions" {
+  statement {
+    sid = ""
+
+    actions = [
+      "ec2:*",
+    ]
+
+    resources = [
+        "*"
+    ]
+    effect    = "Allow"
+  }
+}
+
+resource "aws_iam_policy" "lambda_vpc_permissions" {
+  name   = "lambda-vpc-permissions"
+  policy = "${data.aws_iam_policy_document.lambda_vpc_permissions.json}"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_vpc_permissions" {
+  role       = "${module.places_to_go_lambda.iam_role_id}"
+  policy_arn = "${aws_iam_policy.lambda_vpc_permissions.arn}"
 }

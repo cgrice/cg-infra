@@ -1,15 +1,3 @@
-terraform {
-    backend "s3" {
-      bucket = "cg-infra-tfstate"
-      key = "plaes-to-go.tfstate"
-      region = "eu-west-1"
-    }
-}
-
-provider "aws" {
-  region     = "${var.region}"
-}
-
 resource "aws_s3_bucket" "places_to_go_deploy_artifacts" {
   bucket = "codepipeline-places-to-go-artifacts"
   acl    = "private"
@@ -27,11 +15,51 @@ resource "aws_codebuild_project" "build" {
     packaging      = "ZIP"
   }
 
+  vpc_config {
+    vpc_id = "${data.terraform_remote_state.vpc.vpc_id}"
+
+    subnets = ["${data.terraform_remote_state.vpc.private_subnets[0]}"]
+
+    security_group_ids = [
+      "sg-09936a2b030e73694",
+    ]
+  }
+
   environment {
     compute_type    = "BUILD_GENERAL1_SMALL"
     image           = "aws/codebuild/nodejs:10.14.1"
     type            = "LINUX_CONTAINER"
     privileged_mode = true
+
+    environment_variable {
+      "name"  = "ENGINE_API_KEY"
+      "value" = "${var.engine_api_key}"
+    }
+
+    environment_variable {
+      "name"  = "DB_USERNAME"
+      "value" = "places"
+    }
+    
+    environment_variable {
+      "name"  = "DB_PASSWORD"
+      "value" = "${var.db_password}"
+    }
+
+    environment_variable {
+      "name"  = "DB_DATABASE"
+      "value" = "places_to_go"
+    }
+
+    environment_variable {
+      "name"  = "DB_HOST"
+      "value" = "${aws_rds_cluster.places.endpoint}"
+    }
+
+    environment_variable {
+      "name"  = "NODE_ENV"
+      "value" = "development"
+    }
   }
 
   source {
@@ -87,5 +115,25 @@ resource "aws_codepipeline" "places_to_go_deploy" {
         ProjectName = "${aws_codebuild_project.build.name}"
       }
     }
+  }
+}
+
+locals {
+  webhook_secret = "${var.webhook_secret}"
+}
+
+resource "aws_codepipeline_webhook" "bar" {
+  name            = "places_to_go_deploy_webhook"
+  authentication  = "GITHUB_HMAC"
+  target_action   = "Source"
+  target_pipeline = "${aws_codepipeline.places_to_go_deploy.name}"
+
+  authentication_configuration {
+    secret_token = "${local.webhook_secret}"
+  }
+
+  filter {
+    json_path    = "$.ref"
+    match_equals = "refs/heads/{Branch}"
   }
 }
